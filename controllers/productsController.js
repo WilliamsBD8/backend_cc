@@ -116,4 +116,37 @@ const getAll = async (req, res) => {
     }
 }
 
-export {getProducts, created, updated, getAll }
+const getPaginate = async (req, res) => {
+    try {
+
+        const data = req.body;
+
+        const length = parseInt(data.length) || 9; // Número de registros por página
+        const page = parseInt(data.paginate) || 1;
+
+        const products = await Product.find()
+            .sort({ createdAt: -1 })
+            .skip(length * (page - 1)) // Salta los primeros 'start' registros
+            .limit(length); // Limita la cantidad de registros
+
+        const total = await Product.countDocuments();
+
+        return messageSuccess(res, {
+            recordsTotal: total,
+            data: products
+        }, 200)
+        
+    } catch (error) {
+        if("errorResponse" in error){
+            var myError = errorsDB().find(e => e.code == error.errorResponse.code);
+            const error_key = Object.keys(error.errorResponse.keyPattern);
+            let repeat = error.errorResponse.keyValue[error_key[0]];
+            myError.msg = myError.msg.replace('%campo%', repeat);
+        }else{
+            var myError = {msg: error}
+        }
+        return messageError(res, myError.msg, 404);
+    }
+}
+
+export {getProducts, created, updated, getAll, getPaginate }
